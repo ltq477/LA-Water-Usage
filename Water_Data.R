@@ -1,10 +1,8 @@
 library(dplyr)
 library(shiny)
 library(ggplot2)
-library(googleVis)
 library(leaflet)
 library(mapproj)
-library(tidyverse)
 
 #Read Ppopulation Data
 pop <- read.csv("Data/Population_by_zip.csv",
@@ -12,27 +10,33 @@ pop <- read.csv("Data/Population_by_zip.csv",
 df_pop <- tbl_df(rename(pop, Zip = Zip.Code))
 
 #Read Water usage
-water <- read.csv("Data/Water_Electric_2005-2013_by_zip.csv",
+water <- read.csv("Data/Water_Electric.csv",
                   header = TRUE, stringsAsFactors = FALSE)
-df_water <- tbl_df(rename(water, Zip = Zip.Code))
+df_water <- tbl_df(water)
 
 #Read Income data
-
 income <- read.csv("Data/MedAvgInc_CALosAngeles_Zips_2015.csv", 
                    header=TRUE, stringsAsFactors = FALSE)
 df_income <- tbl_df(income)
 
-
-#join income and pop by zip
+#join income and population by zip
 income_pop_join <- full_join(df_pop, df_income, by = "Zip")
-income_pop <- select(income_pop_join, Zip, Total.Population, Median.Age, Average.Household.Size, Median_Household_income, Mean_income, City)
+income_pop <- select(income_pop_join, Zip, place_geoid, Total.Population, Median.Age, Average.Household.Size, Median_Household_income, Mean_income, City)
 df_income_pop <- tbl_df(income_pop)
 arrange(df_income_pop, Zip)
 
-#clean df_water
-value_date <- as.Date(df_water$Value.Date)          #changes date format
-rem_n <- gsub('\n',",",df_water$Zip)                #replaces \n with ,
+#Change Water date format
+value_date <- as.Date(df_water$Value.Date)                #changes date format
 
-#separate zip values
-separate(df_water, df_water$Zip, c("Zip", "Long", "Lat"), sep = ",")
+#join income_pop and df_water
+income_pop_water_join <- full_join(df_income_pop, df_water, by="Zip")
+income_pop_water <- select(income_pop_water_join, Zip, Total.Population, Median_Household_income, Water.Use, Power.Use, place_geoid, Median.Age, Average.Household.Size, Mean_income, City)
+df_income_pop_water <- tbl_df(arrange(income_pop_water, Zip))
+
+#Final Data
+WaterPopulationIncome <- df_income_pop_water
+
+#Export to csv
+write_csv(WaterPopulationIncome, "Data/WaterPopulationIncome.csv")
+
 
